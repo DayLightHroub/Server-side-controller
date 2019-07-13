@@ -1,4 +1,5 @@
 ﻿
+using ConsoleApp3.pipes;
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
@@ -73,8 +74,8 @@ namespace ConsoleApp3
             };
 
             SetConsoleCtrlHandler(_consoleCtrlHandler, true);
-            //initialze pipe listener in a new thread
-            new Thread(new ThreadStart(intiPipeListener)).Start();
+            //initialze pipe listener in a new thread using the PipeMaganer class
+            new PipeManager();
             
             byte[] data = new byte[1024];
            
@@ -200,51 +201,7 @@ namespace ConsoleApp3
 
         }
 
-        private static void intiPipeListener()
-        {
-            while (true)
-            {
-
-
-                NamedPipeServerStream pipeServer =
-                  new NamedPipeServerStream("testpipe", PipeDirection.InOut);
-
-                Console.Write("Waiting for client connection...");
-                pipeServer.WaitForConnection();
-
-                Console.WriteLine("Client connected.");
-                try
-                {
-                    // Read user input and send that to the client process.
-                    StreamWriter sw = new StreamWriter(pipeServer);
-                    StreamReader sr = new StreamReader(pipeServer);
-
-                    sw.AutoFlush = true;
-
-                    string message;
-                    while ((message = sr.ReadLine()) != null)
-                        Console.WriteLine("[CLIENT]: " + message);
-
-
-                    sr.Close();
-                    sw.Close();
-                }
-                // Catch the IOException that is raised if the pipe is broken
-                // or disconnected.
-                catch (IOException e)
-                {
-                    Console.WriteLine("ERROR: {0}", e.Message);
-                }
-                catch (System.ObjectDisposedException e1)
-                {
-                    Console.WriteLine("client disconncted");
-                }
-
-                pipeServer.Close();
-            }
-
-
-        }
+       
 
         private static void changeLolPw(object obj)
         {
